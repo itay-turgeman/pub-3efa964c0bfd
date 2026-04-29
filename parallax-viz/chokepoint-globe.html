@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚡ PARALLAX · Chokepoint Globe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg-deep: #050510;
+  --bg-card: rgba(20, 20, 42, 0.85);
+  --bg-card-solid: #14142a;
+  --bg-card-hover: rgba(31, 31, 58, 0.9);
+  --atlas-magenta: #ff5faf;
+  --atlas-pink: #ff87d7;
+  --atlas-gold: #ffd75f;
+  --atlas-sky: #87afff;
+  --atlas-cyan: #87ffff;
+  --atlas-purple: #af87ff;
+  --atlas-mint: #87d7af;
+  --atlas-orange: #ff9f43;
+  --atlas-red: #ff5f5f;
+  --atlas-green: #2ecc71;
+  --atlas-text: #e8e8f5;
+  --atlas-text-dim: #8a8aa5;
+  --border-subtle: rgba(255, 95, 175, 0.25);
+  --border-bright: rgba(255, 95, 175, 0.7);
+  --glow-magenta: 0 0 20px rgba(255, 95, 175, 0.5), 0 0 40px rgba(255, 95, 175, 0.2);
+  --glow-gold: 0 0 20px rgba(255, 215, 95, 0.5), 0 0 40px rgba(255, 215, 95, 0.2);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse at center, #0a0a1f 0%, #000005 100%);
+  font-family: 'JetBrains Mono', 'SF Mono', 'Courier New', monospace;
+  color: var(--atlas-text);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* CRT scanlines overlay */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 95, 175, 0) 50%,
+    rgba(255, 95, 175, 0.02) 50%
+  );
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: overlay;
+}
+
+#globeViz {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+}
+
+/* HEADER */
+#hero {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 18px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 100;
+  background: linear-gradient(to bottom, rgba(5, 5, 16, 0.9) 0%, rgba(5, 5, 16, 0) 100%);
+  pointer-events: none;
+}
+
+.title-block { pointer-events: auto; }
+
+.title-block h1 {
+  font-family: 'Orbitron', monospace;
+  font-size: 28px;
+  font-weight: 900;
+  background: linear-gradient(90deg, var(--atlas-magenta), var(--atlas-gold), var(--atlas-cyan));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: var(--glow-magenta);
+  letter-spacing: 4px;
+}
+
+.subtitle {
+  display: block;
+  font-size: 11px;
+  color: var(--atlas-text-dim);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.status-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: right;
+  font-size: 11px;
+  color: var(--atlas-text-dim);
+  pointer-events: auto;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--atlas-green);
+  box-shadow: 0 0 8px var(--atlas-green);
+}
+
+.dot.pulse {
+  animation: pulseDot 1.4s infinite ease-in-out;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.3; transform: scale(1.4); }
+}
+
+/* FILTERS PANEL */
+#filters {
+  position: absolute;
+  top: 110px;
+  left: 28px;
+  width: 240px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 18px;
+  z-index: 100;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+#filters h3 {
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--atlas-magenta);
+  margin-bottom: 14px;
+  font-weight: 700;
+}
+
+.filter-btn {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  margin-bottom: 6px;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--atlas-text);
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--cat-color, var(--atlas-magenta));
+  color: var(--cat-color, var(--atlas-magenta));
+  transform: translateX(3px);
+}
+
+.filter-btn.active {
+  background: var(--cat-color, var(--atlas-magenta));
+  color: #000;
+  border-color: transparent;
+  font-weight: 700;
+  box-shadow: 0 0 12px var(--cat-color, var(--atlas-magenta));
+}
+
+/* INFO PANEL */
+#info-panel {
+  position: absolute;
+  top: 110px;
+  right: 28px;
+  bottom: 100px;
+  width: 360px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 24px;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+#info-panel::-webkit-scrollbar { width: 6px; }
+#info-panel::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); }
+#info-panel::-webkit-scrollbar-thumb { background: var(--atlas-magenta); border-radius: 3px; }
+
+.default-info h2 {
+  font-family: 'Orbitron', monospace;
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: var(--atlas-gold);
+  margin-bottom: 12px;
+  text-shadow: var(--glow-gold);
+}
+
+.default-info p {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--atlas-text-dim);
+  margin-bottom: 16px;
+}
+
+.default-info p b { color: var(--atlas-gold); }
+.default-info p b.shock { color: var(--atlas-red); }
+
+.action-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.action-btn {
+  padding: 12px;
+  background: linear-gradient(135deg, rgba(255, 95, 175, 0.15), rgba(255, 215, 95, 0.15));
+  border: 1px solid var(--atlas-magenta);
+  border-radius: 6px;
+  color: var(--atlas-text);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  background: linear-gradient(135deg, rgba(255, 95, 175, 0.4), rgba(255, 215, 95, 0.4));
+  transform: translateY(-2px);
+  box-shadow: var(--glow-magenta);
+}
+
+.action-btn.shock { border-color: var(--atlas-red); }
+.action-btn.shock:hover { box-shadow: 0 0 20px var(--atlas-red); }
+
+/* Selected chokepoint info */
+.cp-info { display: none; }
+.cp-info.show { display: block; }
+
+.cp-category {
+  display: inline-block;
+  padding: 4px 10px;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+
+.cp-name {
+  font-family: 'Orbitron', monospace;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+
+.cp-severity {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+.severity-dot {
+  width: 16px;
+  height: 4px;
+  background: var(--atlas-red);
+  border-radius: 2px;
+}
+
+.severity-dot.dim { background: rgba(255, 95, 95, 0.2); }
+
+.severity-label {
+  color: var(--atlas-text-dim);
+  font-size: 10px;
+  margin-left: 8px;
+}
+
+.cp-section { margin-bottom: 18px; }
+
+.cp-section h4 {
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--atlas-magenta);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.cp-section p, .cp-section li {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--atlas-text);
+}
+
+.cp-section .share { color: inherit; font-weight: 700; }
+
+.cp-section ul { list-style: none; padding: 0; }
+
+.cp-section li {
+  padding: 4px 0;
+  border-bottom: 1px dashed rgba(255, 95, 175, 0.15);
+}
+
+.cp-section li::before {
+  content: '▸ ';
+  color: var(--atlas-gold);
+}
+
+.ticker-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.ticker-pill {
+  background: rgba(255, 215, 95, 0.15);
+  border: 1px solid var(--atlas-gold);
+  color: var(--atlas-gold);
+  padding: 3px 8px;
+  font-size: 10px;
+  border-radius: 3px;
+  font-weight: 700;
+}
+
+/* FOOTER */
+#footer {
+  position: absolute;
+  bottom: 18px;
+  left: 28px;
+  right: 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  color: var(--atlas-text-dim);
+  z-index: 100;
+  letter-spacing: 1px;
+  pointer-events: none;
+}
+
+#footer a {
+  color: var(--atlas-cyan);
+  text-decoration: none;
+  pointer-events: auto;
+  margin: 0 6px;
+}
+
+#footer a:hover { color: var(--atlas-pink); }
+
+#legend {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+}
+
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 6px currentColor;
+}
+
+/* GLOBE TOOLTIPS — built via DOM, styled here */
+.gt-card {
+  background: #14142a;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+
+.gt-card-cat {
+  font-weight: 700;
+  letter-spacing: 2px;
+  font-size: 9px;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.gt-card-name { font-weight: 700; margin-bottom: 2px; }
+.gt-card-hint { color: #aaa; font-size: 10px; }
+
+.gt-arc {
+  background: #14142a;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+}
+
+/* LOADING SCREEN */
+#loader {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-deep);
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--atlas-magenta);
+  transition: opacity 0.6s, visibility 0.6s;
+}
+
+#loader.hidden { opacity: 0; visibility: hidden; }
+
+#loader .loader-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 36px;
+  font-weight: 900;
+  letter-spacing: 8px;
+  background: linear-gradient(90deg, var(--atlas-magenta), var(--atlas-gold), var(--atlas-cyan));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 24px;
+}
+
+.loader-bar {
+  width: 280px;
+  height: 2px;
+  background: rgba(255, 95, 175, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.loader-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--atlas-magenta);
+  animation: loaderSweep 1.4s infinite linear;
+  box-shadow: 0 0 12px var(--atlas-magenta);
+}
+
+@keyframes loaderSweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.loader-text {
+  margin-top: 18px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--atlas-text-dim);
+}
+
+/* SHOCK MODE OVERLAY */
+#shock-overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(255, 95, 95, 0.15), transparent);
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+#shock-overlay.active {
+  opacity: 1;
+  animation: shockPulse 1s infinite ease-in-out;
+}
+
+@keyframes shockPulse {
+  0%, 100% { background: radial-gradient(circle at center, rgba(255, 95, 95, 0.15), transparent); }
+  50%      { background: radial-gradient(circle at center, rgba(255, 95, 95, 0.35), transparent); }
+}
+
+/* TOAST */
+#toast {
+  position: fixed;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%) translateY(40px);
+  background: var(--bg-card-solid);
+  border: 1px solid var(--atlas-gold);
+  color: var(--atlas-gold);
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  box-shadow: var(--glow-gold);
+  opacity: 0;
+  transition: all 0.4s;
+  z-index: 200;
+  pointer-events: none;
+  max-width: 400px;
+  text-align: center;
+}
+
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  #filters { width: 180px; padding: 12px; top: 90px; left: 12px; }
+  #info-panel { width: 280px; right: 12px; top: 90px; bottom: 80px; padding: 16px; }
+  .title-block h1 { font-size: 20px; }
+  .subtitle { font-size: 9px; }
+  #footer { font-size: 9px; }
+}
+
+@media (max-width: 600px) {
+  #filters, #info-panel { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loader">
+  <div class="loader-title">PARALLAX</div>
+  <div class="loader-bar"></div>
+  <div class="loader-text">INITIALIZING WORLD MECHANICS LAYER...</div>
+</div>
+
+<!-- HERO -->
+<header id="hero">
+  <div class="title-block">
+    <h1>⚡ PARALLAX</h1>
+    <span class="subtitle">CHOKEPOINT GLOBE · World Mechanics Layer · v1.0</span>
+  </div>
+  <div class="status-block">
+    <div class="status-item"><span class="dot pulse"></span> SYSTEM ONLINE</div>
+    <div class="status-item">16 NODES · 31 TRADE FLOWS · 5 CATEGORIES</div>
+    <div class="status-item">ATLAS COLOR LANGUAGE</div>
+  </div>
+</header>
+
+<!-- FILTERS -->
+<aside id="filters">
+  <h3>▸ FILTER · CATEGORY</h3>
+  <button class="filter-btn active" data-category="all" style="--cat-color: var(--atlas-magenta)">🌍 ALL</button>
+  <button class="filter-btn" data-category="oil" style="--cat-color: var(--atlas-red)">🛢️ OIL · ENERGY</button>
+  <button class="filter-btn" data-category="semis" style="--cat-color: var(--atlas-cyan)">💾 SEMICONDUCTORS</button>
+  <button class="filter-btn" data-category="batteries" style="--cat-color: var(--atlas-mint)">🔋 BATTERIES</button>
+  <button class="filter-btn" data-category="rare-earths" style="--cat-color: var(--atlas-gold)">🧲 RARE EARTHS</button>
+  <button class="filter-btn" data-category="food" style="--cat-color: var(--atlas-orange)">🌾 FOOD · AGRI</button>
+</aside>
+
+<!-- INFO PANEL -->
+<aside id="info-panel">
+  <div class="default-info">
+    <h2>🎯 SELECT A CHOKEPOINT</h2>
+    <p>Click any glowing point on the globe to inspect the chokepoint — who controls it, what flows through it, what historically happened when it was disrupted, and which equities are exposed.</p>
+    <p>Or hit <b>Story Mode</b> for an auto-tour through every node, or <b class="shock">Shock Simulator</b> to watch a cascade ripple through the world.</p>
+    <div class="action-block">
+      <button class="action-btn" id="story-mode">🎬 STORY MODE</button>
+      <button class="action-btn shock" id="shock-mode">💥 SHOCK SIMULATOR</button>
+      <button class="action-btn" id="reset-view">🔄 RESET VIEW</button>
+    </div>
+  </div>
+  <div class="cp-info" id="cp-info"></div>
+</aside>
+
+<!-- FOOTER -->
+<footer id="footer">
+  <div id="legend">
+    <span class="legend-item"><span class="legend-swatch" style="background:#ff5f5f;color:#ff5f5f"></span> oil</span>
+    <span class="legend-item"><span class="legend-swatch" style="background:#87ffff;color:#87ffff"></span> semis</span>
+    <span class="legend-item"><span class="legend-swatch" style="background:#87d7af;color:#87d7af"></span> batteries</span>
+    <span class="legend-item"><span class="legend-swatch" style="background:#ffd75f;color:#ffd75f"></span> rare-earths</span>
+    <span class="legend-item"><span class="legend-swatch" style="background:#ff9f43;color:#ff9f43"></span> food</span>
+  </div>
+  <div>
+    Built with <a href="https://globe.gl">globe.gl</a> ·
+    <a href="https://github.com/itay-turgeman/parallax">repo</a> ·
+    <a href="https://github.com/itay-turgeman/atlas/blob/main/docs/diagram-style-guide.md">style guide</a>
+  </div>
+</footer>
+
+<!-- Globe target -->
+<div id="globeViz"></div>
+
+<!-- Shock overlay -->
+<div id="shock-overlay"></div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- DEPENDENCIES -->
+<script src="https://unpkg.com/globe.gl"></script>
+
+<!-- LOGIC -->
+<script>
+/* ===== CATEGORY METADATA ===== */
+const CAT = {
+  oil:           { color: '#ff5f5f', emoji: '🛢️',  label: 'Oil · Energy' },
+  semis:         { color: '#87ffff', emoji: '💾', label: 'Semiconductors' },
+  batteries:     { color: '#87d7af', emoji: '🔋', label: 'Batteries' },
+  'rare-earths': { color: '#ffd75f', emoji: '🧲', label: 'Rare Earths' },
+  food:          { color: '#ff9f43', emoji: '🌾', label: 'Food · Agri' }
+};
+
+/* ===== CHOKEPOINTS — 16 nodes ===== */
+const chokepoints = [
+  { id: 'hormuz', name: 'Strait of Hormuz', cat: 'oil',
+    lat: 26.566, lng: 56.252, severity: 5,
+    description: 'The single most strategic energy chokepoint on Earth. ~20% of global oil and ~25% of LNG flow through this 21-mile-wide strait every day.',
+    controls: 'Iran (north shore) and Oman (south shore)',
+    share: '~20% global oil · ~25% global LNG',
+    historical: ['1980-88: Tanker War (Iran-Iraq)', '2019: Drone attack on Saudi Aramco (Abqaiq)', '2024-25: Houthi disruption in Red Sea (adjacent)'],
+    sectors: ['Energy', 'Shipping', 'Refining', 'Insurance'],
+    tickers: ['XOM', 'CVX', 'BP', 'SHEL', 'MPC', 'PSX'] },
+  { id: 'suez', name: 'Suez Canal', cat: 'oil',
+    lat: 30.5852, lng: 32.2654, severity: 4,
+    description: '~12% of global trade and ~10% of global oil transits the canal. Closure (war, accident, blockade) reroutes shipping around Africa, adding 10-14 days.',
+    controls: 'Egypt (Suez Canal Authority)',
+    share: '~12% global trade · ~10% global oil',
+    historical: ['1956: Suez Crisis (closure)', '1967-75: Closed during Arab-Israeli wars', '2021: Ever Given grounding (6 days)'],
+    sectors: ['Shipping', 'Energy', 'Container freight'],
+    tickers: ['ZIM', 'MAERSK-B', 'CMA-CGM'] },
+  { id: 'bab-mandeb', name: 'Bab-el-Mandeb', cat: 'oil',
+    lat: 12.583, lng: 43.333, severity: 4,
+    description: 'The "Gate of Tears" — narrow strait between Yemen and Djibouti. Houthi attacks 2023-25 forced Red Sea reroutes; insurers fled.',
+    controls: 'Yemen (Houthi-aligned), Djibouti, Eritrea',
+    share: '~4% of global oil · primary Red Sea entry',
+    historical: ['2016-: Houthi missile + drone attacks on shipping', '2023-25: Major shipping rerouted around Cape of Good Hope'],
+    sectors: ['Shipping', 'Energy', 'Defense'],
+    tickers: ['LMT', 'NOC', 'RTX', 'DRS'] },
+  { id: 'opec-saudi', name: 'OPEC Heartland', cat: 'oil',
+    lat: 24.0, lng: 45.0, severity: 5,
+    description: 'Saudi Arabia + UAE + Kuwait + Iraq — the swing-producer bloc. Cuts here reprice global oil within hours.',
+    controls: 'OPEC+ (Saudi-led, with Russia coordination)',
+    share: '~40% of global oil production',
+    historical: ['1973: OPEC oil embargo', '2014-16: Saudi flooding to crush US shale', '2020 March: Saudi-Russia price war'],
+    sectors: ['Energy', 'Petrodollar / FX', 'Defense'],
+    tickers: ['Aramco', 'XOM', 'CVX'] },
+
+  { id: 'tsmc', name: 'TSMC · Taiwan', cat: 'semis',
+    lat: 24.4798, lng: 120.9758, severity: 5,
+    description: "TSMC produces ~90% of the world's most advanced chips. A China-Taiwan event would freeze Apple, NVIDIA, AMD, half the auto industry, and most of AI.",
+    controls: 'TSMC (Taiwan-incorporated)',
+    share: '~92% of advanced (≤7nm) chip production',
+    historical: ['2021: Auto chip shortage (Honda, Toyota, GM idled lines)', '2022: Pelosi Taiwan visit market wobble', '2024: PLA exercises encircling Taiwan'],
+    sectors: ['Semiconductors', 'Consumer Electronics', 'Automotive', 'AI / Data Center'],
+    tickers: ['TSM', 'NVDA', 'AAPL', 'AMD', 'AVGO'] },
+  { id: 'asml', name: 'ASML · Netherlands', cat: 'semis',
+    lat: 51.4416, lng: 5.4697, severity: 5,
+    description: 'The single global supplier of EUV lithography machines. Without ASML, no advanced chips get made — anywhere. Single point of failure for the entire industry.',
+    controls: 'ASML Holding (Veldhoven, NL)',
+    share: '100% of EUV lithography systems',
+    historical: ['2018-: Export controls to China tightened repeatedly', '2023: Dutch govt blocked High-NA EUV to China'],
+    sectors: ['Semiconductor equipment', 'Photonics'],
+    tickers: ['ASML', 'AMAT', 'KLAC', 'LRCX'] },
+  { id: 'samsung', name: 'Samsung · S. Korea', cat: 'semis',
+    lat: 37.2581, lng: 127.0507, severity: 4,
+    description: "World's largest memory chip producer (DRAM, NAND). Only TSMC competitor at the leading edge for logic.",
+    controls: 'Samsung Electronics (Suwon HQ)',
+    share: '~40% global DRAM, ~33% global NAND',
+    historical: ['2017-19: Memory cycle bust', '2020: COVID demand spike + supply crunch'],
+    sectors: ['Memory', 'Mobile', 'Display'],
+    tickers: ['SSNLF', 'MU', 'WDC', 'STX'] },
+  { id: 'smic', name: 'SMIC · Shanghai', cat: 'semis',
+    lat: 31.2304, lng: 121.4737, severity: 3,
+    description: "China's national champion fab. Cut off from EUV by US/Dutch sanctions, capped at ~7nm via DUV multi-patterning.",
+    controls: 'SMIC (Shanghai-listed, gov-backed)',
+    share: '~5% global foundry · 100% of China advanced fab',
+    historical: ['2020: Added to US Entity List', '2022: CHIPS Act counter-positioning'],
+    sectors: ['Semis', 'China-tech sovereignty'],
+    tickers: ['0981.HK', 'INTC', 'GFS'] },
+
+  { id: 'lithium-triangle', name: 'Lithium Triangle', cat: 'batteries',
+    lat: -22.5, lng: -67.5, severity: 4,
+    description: 'Chile + Argentina + Bolivia salt flats — ~60% of global lithium reserves. Slow extraction (12-18 months brine evaporation) means inelastic supply.',
+    controls: 'Chile (SQM, Albemarle), Argentina, Bolivia (state)',
+    share: '~60% global lithium reserves · ~35% production',
+    historical: ['2017-22: Lithium price 6x', '2023: Chile nationalized lithium under Boric', '2024: Argentina deregulated under Milei'],
+    sectors: ['EV', 'Grid Storage', 'Mining'],
+    tickers: ['ALB', 'SQM', 'LAC', 'TSLA'] },
+  { id: 'drc-cobalt', name: 'DRC · Cobalt Belt', cat: 'batteries',
+    lat: -10.7167, lng: 25.4667, severity: 5,
+    description: 'Democratic Republic of Congo holds ~70% of global cobalt. Most refined in China. Artisanal mining + child labor risk = ESG flashpoint.',
+    controls: 'DRC government, Chinese mining co\'s (CMOC, Zijin), Glencore',
+    share: '~70% global cobalt production',
+    historical: ['2016-: Cobalt price spikes on EV demand', '2023-: Indonesia nickel substitution starting to bite'],
+    sectors: ['EV', 'Aerospace', 'Mining'],
+    tickers: ['GLEN.L', '3993.HK', 'TSLA', 'F'] },
+  { id: 'indonesia-nickel', name: 'Indonesia · Nickel', cat: 'batteries',
+    lat: -2.5, lng: 121.5, severity: 4,
+    description: 'Indonesia produces ~50% of global nickel and is rapidly building NCM/LFP cathode capacity. Export bans on raw ore reshape the entire battery supply chain.',
+    controls: 'Indonesia (ESDM ministry), Chinese smelters (Tsingshan, GEM)',
+    share: '~50% global nickel · growing share of cathode',
+    historical: ['2020: Raw nickel ore export ban', '2022: Tsingshan nickel short squeeze on LME'],
+    sectors: ['EV batteries', 'Stainless steel'],
+    tickers: ['BHP', 'VALE', 'NILSY'] },
+  { id: 'catl', name: 'CATL · China', cat: 'batteries',
+    lat: 26.6611, lng: 119.5444, severity: 4,
+    description: "World's largest battery cell maker. ~37% of global EV battery installations.",
+    controls: 'CATL (Ningde HQ, Shenzhen-listed)',
+    share: '~37% global EV battery cells',
+    historical: ['2020-23: Battery price decline 80%+', '2023-: LFP overtaking NCM'],
+    sectors: ['EV', 'Grid storage'],
+    tickers: ['300750.SZ', 'TSLA', 'F'] },
+
+  { id: 'china-re', name: 'China · Rare Earth Refining', cat: 'rare-earths',
+    lat: 41.7669, lng: 109.9722, severity: 5,
+    description: 'Bayan Obo + 12 other facilities — China refines ~90%+ of global rare earths. Magnets for EV motors, wind turbines, F-35 fighter jets all run through here.',
+    controls: 'China Northern Rare Earth Group + 5 others (state-coordinated)',
+    share: '~85% global REE mining · ~92% refining',
+    historical: ['2010: China-Japan REE export embargo', '2022: Export controls expanded to gallium / germanium'],
+    sectors: ['Defense', 'EV motors', 'Wind power', 'Permanent magnets'],
+    tickers: ['MP', 'LYC.AX', 'TMRC', 'REMX'] },
+  { id: 'mp-materials', name: 'MP Materials · California', cat: 'rare-earths',
+    lat: 35.4914, lng: -115.5306, severity: 3,
+    description: 'Mountain Pass mine — the only operational REE mine in North America. Building US refining capacity but years behind China.',
+    controls: 'MP Materials (NYSE:MP)',
+    share: '~15% global REE concentrate · refining ramping',
+    historical: ['2017: Restarted after bankruptcy', '2022: DoD investment for magnet plant'],
+    sectors: ['Defense', 'Domestic REE supply chain'],
+    tickers: ['MP', 'GM', 'F'] },
+  { id: 'lynas', name: 'Lynas · Australia', cat: 'rare-earths',
+    lat: -28.7333, lng: 121.5, severity: 3,
+    description: "Mt Weld mine + Malaysian refining (and now Texas). Largest non-China REE producer and the West's primary diversification bet.",
+    controls: 'Lynas Rare Earths (ASX:LYC)',
+    share: '~12% global REE · largest ex-China refiner',
+    historical: ['2019: Malaysian govt threatened to shut Lynas Advanced Materials Plant', '2022: Texas plant DoD-funded'],
+    sectors: ['Defense', 'EV', 'Wind'],
+    tickers: ['LYC.AX', 'MP', 'AMR'] },
+
+  { id: 'ukraine-wheat', name: 'Ukraine · Wheat / Sunflower', cat: 'food',
+    lat: 49.0, lng: 32.0, severity: 5,
+    description: 'Ukraine + Russia together = ~30% global wheat exports, ~75% global sunflower oil. War disrupted Black Sea grain corridor; food prices in MENA + Africa hit hard.',
+    controls: 'Ukraine, Russia (Black Sea Fleet contests)',
+    share: '~30% global wheat exports · 75% sunflower',
+    historical: ['2022: Russian invasion + grain corridor blockade', '2023: Black Sea Grain Initiative collapse', '2024-: Houthi Red Sea = Egypt grain pinch'],
+    sectors: ['Agriculture', 'Fertilizer', 'Food retail', 'EM food security'],
+    tickers: ['ADM', 'BG', 'CF', 'NTR', 'MOS'] }
+];
+
+/* ===== TRADE FLOWS ===== */
+const flows = [
+  { from: 'hormuz', toLat: 35, toLng: 110, toName: 'China', mag: 5, cat: 'oil' },
+  { from: 'hormuz', toLat: 20, toLng: 78,  toName: 'India', mag: 4, cat: 'oil' },
+  { from: 'hormuz', toLat: 36, toLng: 138, toName: 'Japan', mag: 4, cat: 'oil' },
+  { from: 'hormuz', toLat: 50, toLng: 10,  toName: 'EU',    mag: 3, cat: 'oil' },
+  { from: 'hormuz', toLat: 35, toLng: -97, toName: 'US',    mag: 2, cat: 'oil' },
+  { from: 'suez',   toLat: 50, toLng: 10,  toName: 'EU',    mag: 4, cat: 'oil' },
+  { from: 'suez',   toLat: 35, toLng: -77, toName: 'US East Coast', mag: 3, cat: 'oil' },
+  { from: 'opec-saudi', toLat: 35, toLng: 110, toName: 'China', mag: 5, cat: 'oil' },
+  { from: 'opec-saudi', toLat: 36, toLng: 138, toName: 'Japan', mag: 4, cat: 'oil' },
+  { from: 'opec-saudi', toLat: 50, toLng: 10,  toName: 'EU',    mag: 4, cat: 'oil' },
+
+  { from: 'tsmc', toLat: 38, toLng: -97, toName: 'US',    mag: 5, cat: 'semis' },
+  { from: 'tsmc', toLat: 50, toLng: 10,  toName: 'EU',    mag: 3, cat: 'semis' },
+  { from: 'tsmc', toLat: 36, toLng: 138, toName: 'Japan', mag: 4, cat: 'semis' },
+  { from: 'tsmc', toLat: 37.6, toLng: 127, toName: 'S Korea', mag: 3, cat: 'semis' },
+  { from: 'asml', toLat: 24.5, toLng: 121, toName: 'Taiwan TSMC', mag: 5, cat: 'semis' },
+  { from: 'asml', toLat: 37.3, toLng: 127, toName: 'S Korea Samsung', mag: 4, cat: 'semis' },
+  { from: 'asml', toLat: 38, toLng: -97, toName: 'US Intel/GF', mag: 3, cat: 'semis' },
+  { from: 'samsung', toLat: 38, toLng: -97, toName: 'US', mag: 4, cat: 'semis' },
+  { from: 'samsung', toLat: 35, toLng: 110, toName: 'China', mag: 4, cat: 'semis' },
+
+  { from: 'lithium-triangle', toLat: 35, toLng: 110, toName: 'China refining', mag: 5, cat: 'batteries' },
+  { from: 'lithium-triangle', toLat: 38, toLng: -97, toName: 'US', mag: 3, cat: 'batteries' },
+  { from: 'drc-cobalt', toLat: 35, toLng: 110, toName: 'China refining', mag: 5, cat: 'batteries' },
+  { from: 'drc-cobalt', toLat: 50, toLng: 10,  toName: 'EU EVs', mag: 2, cat: 'batteries' },
+  { from: 'indonesia-nickel', toLat: 35, toLng: 110, toName: 'China cathode', mag: 4, cat: 'batteries' },
+  { from: 'catl', toLat: 50, toLng: 10,  toName: 'EU EVs', mag: 4, cat: 'batteries' },
+  { from: 'catl', toLat: 38, toLng: -97, toName: 'US EVs', mag: 4, cat: 'batteries' },
+
+  { from: 'china-re', toLat: 38, toLng: -97, toName: 'US Defense', mag: 5, cat: 'rare-earths' },
+  { from: 'china-re', toLat: 50, toLng: 10,  toName: 'EU Wind', mag: 4, cat: 'rare-earths' },
+  { from: 'china-re', toLat: 36, toLng: 138, toName: 'Japan EVs', mag: 4, cat: 'rare-earths' },
+
+  { from: 'ukraine-wheat', toLat: 26, toLng: 30, toName: 'Egypt', mag: 5, cat: 'food' },
+  { from: 'ukraine-wheat', toLat: 9, toLng: 8,   toName: 'West Africa', mag: 4, cat: 'food' },
+  { from: 'ukraine-wheat', toLat: 30, toLng: 70, toName: 'Pakistan', mag: 3, cat: 'food' }
+];
+
+const arcs = flows.map(f => {
+  const src = chokepoints.find(c => c.id === f.from);
+  return {
+    startLat: src.lat, startLng: src.lng,
+    endLat: f.toLat, endLng: f.toLng,
+    color: CAT[f.cat].color,
+    cat: f.cat,
+    fromId: f.from,
+    toName: f.toName,
+    mag: f.mag
+  };
+});
+
+/* ===== DOM helpers (XSS-safe builders) ===== */
+function el(tag, props = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const k in props) {
+    if (k === 'class')   node.className = props[k];
+    else if (k === 'style') Object.assign(node.style, props[k]);
+    else if (k.startsWith('on')) node.addEventListener(k.slice(2), props[k]);
+    else                  node.setAttribute(k, props[k]);
+  }
+  for (const c of children) {
+    if (c == null) continue;
+    if (typeof c === 'string') node.appendChild(document.createTextNode(c));
+    else node.appendChild(c);
+  }
+  return node;
+}
+
+/* ===== TOOLTIP BUILDERS (return HTMLElement, not strings) ===== */
+function buildPointTooltip(d) {
+  const cat = CAT[d.cat];
+  return el('div', { class: 'gt-card', style: { border: `1px solid ${cat.color}`, boxShadow: `0 0 12px ${cat.color}40` } },
+    el('div', { class: 'gt-card-cat', style: { color: cat.color } }, cat.label),
+    el('div', { class: 'gt-card-name' }, `${cat.emoji} ${d.name}`),
+    el('div', { class: 'gt-card-hint' }, 'click to inspect')
+  );
+}
+
+function buildArcTooltip(d) {
+  const cat = CAT[d.cat];
+  const wrap = el('div', { class: 'gt-arc', style: { border: `1px solid ${cat.color}` } });
+  wrap.appendChild(el('span', { style: { color: cat.color } }, cat.emoji));
+  wrap.appendChild(document.createTextNode(' → '));
+  wrap.appendChild(el('b', {}, d.toName));
+  return wrap;
+}
+
+/* ===== GLOBE INIT ===== */
+let activeCategory = 'all';
+let selectedChokepoint = null;
+let storyModeRunning = false;
+
+const globe = Globe()
+  (document.getElementById('globeViz'))
+  .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-night.jpg')
+  .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
+  .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
+  .showAtmosphere(true)
+  .atmosphereColor('#ff5faf')
+  .atmosphereAltitude(0.18)
+  .pointsData(chokepoints)
+  .pointLat('lat').pointLng('lng')
+  .pointAltitude(d => 0.01 + d.severity * 0.008)
+  .pointRadius(d => 0.4 + d.severity * 0.15)
+  .pointColor(d => CAT[d.cat].color)
+  .pointResolution(16)
+  .pointLabel(buildPointTooltip)
+  .onPointClick(d => focusChokepoint(d))
+  .arcsData(arcs)
+  .arcStartLat('startLat').arcStartLng('startLng')
+  .arcEndLat('endLat').arcEndLng('endLng')
+  .arcColor(d => [d.color, d.color])
+  .arcStroke(d => d.mag * 0.18)
+  .arcAltitudeAutoScale(0.5)
+  .arcDashLength(0.4)
+  .arcDashGap(0.18)
+  .arcDashAnimateTime(d => 4000 - d.mag * 400)
+  .arcDashInitialGap(() => Math.random() * 5)
+  .arcLabel(buildArcTooltip);
+
+/* Pulse rings for high-severity chokepoints */
+function buildRings() {
+  const visible = chokepoints.filter(c => activeCategory === 'all' || c.cat === activeCategory);
+  return visible
+    .filter(c => c.severity >= 4)
+    .map(c => ({
+      lat: c.lat,
+      lng: c.lng,
+      maxR: 5 + c.severity,
+      propagationSpeed: 1.8,
+      repeatPeriod: 1600,
+      color: CAT[c.cat].color
+    }));
+}
+
+globe
+  .ringsData(buildRings())
+  .ringColor(d => t => `${d.color}${Math.floor((1 - t) * 255).toString(16).padStart(2, '0')}`)
+  .ringMaxRadius('maxR')
+  .ringPropagationSpeed('propagationSpeed')
+  .ringRepeatPeriod('repeatPeriod');
+
+globe.controls().autoRotate = true;
+globe.controls().autoRotateSpeed = 0.35;
+globe.controls().enableDamping = true;
+globe.controls().dampingFactor = 0.1;
+
+globe.pointOfView({ lat: 25, lng: 60, altitude: 2.6 }, 0);
+
+/* Cinematic intro */
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('loader').classList.add('hidden');
+    globe.pointOfView({ lat: 25, lng: 60, altitude: 2.0 }, 3500);
+    setTimeout(() => showToast('Click any glowing point · or press STORY MODE'), 3800);
+  }, 1400);
+});
+
+window.addEventListener('resize', () => {
+  globe.width(window.innerWidth);
+  globe.height(window.innerHeight);
+});
+
+/* ===== FILTER LOGIC ===== */
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeCategory = btn.dataset.category;
+    applyFilter();
+  });
+});
+
+function applyFilter() {
+  const filteredPoints = activeCategory === 'all'
+    ? chokepoints
+    : chokepoints.filter(c => c.cat === activeCategory);
+
+  const filteredArcs = activeCategory === 'all'
+    ? arcs
+    : arcs.filter(a => a.cat === activeCategory);
+
+  globe.pointsData(filteredPoints);
+  globe.arcsData(filteredArcs);
+  globe.ringsData(buildRings());
+}
+
+/* ===== FOCUS CHOKEPOINT ===== */
+function focusChokepoint(cp) {
+  selectedChokepoint = cp;
+  globe.controls().autoRotate = false;
+  globe.pointOfView({ lat: cp.lat, lng: cp.lng, altitude: 1.5 }, 1600);
+  populateInfoPanel(cp);
+  const myArcs = arcs.filter(a => a.fromId === cp.id);
+  if (activeCategory === 'all') {
+    globe.arcsData(myArcs);
+    setTimeout(() => {
+      if (selectedChokepoint === cp) globe.arcsData(arcs);
+    }, 4500);
+  }
+}
+
+function populateInfoPanel(cp) {
+  const panel = document.getElementById('cp-info');
+  const def   = document.querySelector('.default-info');
+  def.style.display = 'none';
+  panel.classList.add('show');
+
+  // Wipe existing content
+  while (panel.firstChild) panel.removeChild(panel.firstChild);
+
+  const cat = CAT[cp.cat];
+
+  // Category badge
+  panel.appendChild(el('div', {
+    class: 'cp-category',
+    style: { background: cat.color, color: '#000' }
+  }, `${cat.emoji} ${cat.label}`));
+
+  // Name
+  panel.appendChild(el('div', {
+    class: 'cp-name',
+    style: { color: cat.color }
+  }, cp.name));
+
+  // Severity dots
+  const sev = el('div', { class: 'cp-severity' });
+  for (let i = 1; i <= 5; i++) {
+    sev.appendChild(el('div', { class: 'severity-dot' + (i > cp.severity ? ' dim' : '') }));
+  }
+  sev.appendChild(el('span', { class: 'severity-label' }, `SEVERITY ${cp.severity}/5`));
+  panel.appendChild(sev);
+
+  // Section helper
+  function section(title, contents) {
+    const s = el('div', { class: 'cp-section' });
+    s.appendChild(el('h4', {}, `▸ ${title}`));
+    for (const c of (Array.isArray(contents) ? contents : [contents])) s.appendChild(c);
+    return s;
+  }
+
+  panel.appendChild(section('DESCRIPTION', el('p', {}, cp.description)));
+  panel.appendChild(section('WHO CONTROLS', el('p', {}, cp.controls)));
+  panel.appendChild(section('SHARE OF GLOBAL SUPPLY',
+    el('p', { class: 'share', style: { color: cat.color, fontWeight: 700 } }, cp.share)));
+
+  const histList = el('ul');
+  for (const h of cp.historical) histList.appendChild(el('li', {}, h));
+  panel.appendChild(section('HISTORICAL DISRUPTIONS', histList));
+
+  const secList = el('ul');
+  for (const s of cp.sectors) secList.appendChild(el('li', {}, s));
+  panel.appendChild(section('EXPOSED SECTORS', secList));
+
+  const pills = el('div', { class: 'ticker-pills' });
+  for (const t of cp.tickers) pills.appendChild(el('span', { class: 'ticker-pill' }, t));
+  panel.appendChild(section('TICKERS TO WATCH', pills));
+
+  // Action buttons
+  const actions = el('div', { class: 'action-block' });
+  actions.appendChild(el('button', { class: 'action-btn', onclick: () => resetView() }, '← BACK'));
+  actions.appendChild(el('button', { class: 'action-btn shock', onclick: () => shockSingle(cp.id) }, '💥 SHOCK THIS NODE'));
+  panel.appendChild(actions);
+}
+
+/* ===== RESET ===== */
+function resetView() {
+  selectedChokepoint = null;
+  globe.controls().autoRotate = true;
+  globe.pointOfView({ lat: 25, lng: 60, altitude: 2.4 }, 1500);
+  document.getElementById('cp-info').classList.remove('show');
+  document.querySelector('.default-info').style.display = 'block';
+  applyFilter();
+}
+document.getElementById('reset-view').addEventListener('click', resetView);
+
+/* ===== STORY MODE ===== */
+async function storyMode() {
+  if (storyModeRunning) return;
+  storyModeRunning = true;
+  showToast('🎬 STORY MODE — auto-touring all 16 chokepoints...');
+  globe.controls().autoRotate = false;
+
+  for (const cp of chokepoints) {
+    if (!storyModeRunning) break;
+    globe.pointOfView({ lat: cp.lat, lng: cp.lng, altitude: 1.5 }, 2200);
+    await sleep(800);
+    populateInfoPanel(cp);
+    selectedChokepoint = cp;
+    await sleep(3500);
+  }
+
+  storyModeRunning = false;
+  showToast('Story complete · click any point to deep-dive');
+  resetView();
+}
+document.getElementById('story-mode').addEventListener('click', storyMode);
+
+/* ===== SHOCK ===== */
+function shockMode() {
+  const targets = chokepoints.filter(c => c.severity === 5);
+  const target = targets[Math.floor(Math.random() * targets.length)];
+  shockSingle(target.id);
+}
+document.getElementById('shock-mode').addEventListener('click', shockMode);
+
+function shockSingle(id) {
+  const cp = chokepoints.find(c => c.id === id);
+  if (!cp) return;
+
+  showToast(`💥 SHOCK SIMULATOR · ${cp.name} disrupted · cascade in 3...2...1`);
+  document.getElementById('shock-overlay').classList.add('active');
+  globe.controls().autoRotate = false;
+  globe.pointOfView({ lat: cp.lat, lng: cp.lng, altitude: 1.4 }, 1500);
+  populateInfoPanel(cp);
+
+  const cascadeArcs = arcs
+    .filter(a => a.fromId === id)
+    .map(a => ({ ...a, color: '#ff5f5f' }));
+
+  globe.arcsData(cascadeArcs);
+  globe.arcDashAnimateTime(800);
+  globe.arcStroke(d => d.mag * 0.4);
+
+  const shockRings = [{
+    lat: cp.lat, lng: cp.lng,
+    maxR: 25, propagationSpeed: 8, repeatPeriod: 600,
+    color: '#ff5f5f'
+  }];
+  globe.ringsData(shockRings);
+
+  setTimeout(() => {
+    document.getElementById('shock-overlay').classList.remove('active');
+    globe.arcDashAnimateTime(d => 4000 - d.mag * 400);
+    globe.arcStroke(d => d.mag * 0.18);
+    globe.ringsData(buildRings());
+    showToast('Shock simulation complete · click RESET to return');
+  }, 6000);
+}
+
+/* ===== UTIL ===== */
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 4500);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'r' || e.key === 'R') resetView();
+  if (e.key === 's' || e.key === 'S') storyMode();
+  if (e.key === ' ') {
+    e.preventDefault();
+    globe.controls().autoRotate = !globe.controls().autoRotate;
+    showToast(globe.controls().autoRotate ? 'Auto-rotate ON' : 'Auto-rotate OFF (drag to rotate)');
+  }
+  if (e.key === 'Escape') {
+    storyModeRunning = false;
+    resetView();
+  }
+});
+
+console.log('%c⚡ PARALLAX · CHOKEPOINT GLOBE',
+  'background:#1a1a2e; color:#ff5faf; font-size:18px; font-weight:bold; padding:10px 20px; border-left:4px solid #ffd75f');
+console.log('%cKeyboard: R=reset · S=story · SPACE=toggle rotate · ESC=stop story',
+  'color:#87afff; font-size:11px');
+console.log('%c%d chokepoints · %d trade flows · Atlas Color Language',
+  'color:#87d7af; font-size:11px',
+  chokepoints.length, arcs.length);
+</script>
+</body>
+</html>
